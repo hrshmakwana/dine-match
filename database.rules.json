@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "proximity": {
+      "$matchId": {
+        // Only match participants can read the proximity node for their match.
+        // We can't easily verify participant status from RTDB rules,
+        // so we rely on knowing the matchId (treated as a shared secret
+        // between the two participants). In production, use a Cloud Function
+        // to generate a short-lived RTDB token for each match participant.
+        "$userId": {
+          ".read":  "auth != null && auth.uid === $userId",
+          ".write": "auth != null && auth.uid === $userId",
+          ".validate": "newData.hasChildren(['userId','isNearby','distanceMeters','updatedAt'])
+                       && newData.child('userId').isString()
+                       && newData.child('isNearby').isBoolean()
+                       && newData.child('distanceMeters').isNumber()
+                       && newData.child('updatedAt').isNumber()"
+        },
+        // Allow both participants to read each other's proximity flag
+        ".read": "auth != null"
+      }
+    }
+  }
+}

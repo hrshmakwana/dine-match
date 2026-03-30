@@ -1,0 +1,21 @@
+{
+  "name": "dinematch-functions",
+  "version": "1.0.0",
+  "description": "Firebase Cloud Functions for DineMatch",
+  "main": "lib/index.js",
+  "scripts": {
+    "build":  "tsc",
+    "deploy": "npm run build && firebase deploy --only functions",
+    "watch":  "tsc --watch",
+    "serve":  "npm run build && firebase emulators:start --only functions"
+  },
+  "engines": { "node": "20" },
+  "dependencies": {
+    "firebase-admin":    "^12.0.0",
+    "firebase-functions": "^4.6.0"
+  },
+  "devDependencies": {
+    "typescript":       "^5.3.0",
+    "@types/node":      "^20.0.0"
+  }
+}

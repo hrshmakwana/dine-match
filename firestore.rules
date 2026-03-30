@@ -1,0 +1,88 @@
+// firestore.rules
+// Deploy with: firebase deploy --only firestore:rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function isMatchParticipant(matchData) {
+      return request.auth.uid == matchData.userIdA
+          || request.auth.uid == matchData.userIdB;
+    }
+
+    // ── User profiles ────────────────────────────────────────────────
+    // Users can only read/write their own profile.
+    // BUT: other signed-in users can read public fields (for match display).
+    match /users/{userId} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if false;   // soft-delete only via Cloud Function
+    }
+
+    // ── Search sessions ──────────────────────────────────────────────
+    // Any signed-in user can read sessions (needed for matching query).
+    // Users can only create/update their own sessions.
+    match /searchSessions/{sessionId} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ── Matches ──────────────────────────────────────────────────────
+    // Participants can read their own matches.
+    // Only Cloud Functions should create matches (via Admin SDK).
+    // Participants can update limited fields (status, chatStatus).
+    match /matches/{matchId} {
+      allow read:   if isSignedIn()
+                    && isMatchParticipant(resource.data);
+
+      // Only Cloud Function (admin) creates matches
+      allow create: if false;
+
+      // Participants can update: status (accept/decline) and chatStatus
+      allow update: if isSignedIn()
+                    && isMatchParticipant(resource.data)
+                    && onlyUpdating(['status', 'updatedAt', 'chatStatus',
+                                     'userANearby', 'userBNearby', 'chatUnlockedAt']);
+
+      allow delete: if false;
+    }
+
+    // ── Chat messages ─────────────────────────────────────────────────
+    // Only participants can read/write messages.
+    // Chat must be unlocked before sending.
+    match /matches/{matchId}/messages/{messageId} {
+      allow read:  if isSignedIn()
+                   && isMatchParticipant(get(/databases/$(database)/documents/matches/$(matchId)).data);
+
+      allow create: if isSignedIn()
+                    && isMatchParticipant(get(/databases/$(database)/documents/matches/$(matchId)).data)
+                    && get(/databases/$(database)/documents/matches/$(matchId)).data.chatStatus == 'unlocked'
+                    && request.resource.data.senderId == request.auth.uid
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 1000;
+
+      allow update: if false;   // messages are immutable
+      allow delete: if false;
+    }
+
+    // ── Helper: restrict which fields can be updated ─────────────────
+    function onlyUpdating(allowedFields) {
+      return request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(allowedFields);
+    }
+  }
+}
