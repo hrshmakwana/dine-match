@@ -23,7 +23,7 @@ const FOOD_DISLIKES_OPTIONS = [
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const { user, firebaseUser, updateProfile, signOut } = useAuthStore();
+  const { user, updateProfile, signOut } = useAuthStore();
 
   const [editMode, setEditMode]         = useState(false);
   const [uploading, setUploading]       = useState<number | null>(null);  // slot index
@@ -38,16 +38,16 @@ export default function ProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (!firebaseUser) return;
+      if (!user) return;
       setHistoryLoading(true);
-      getMatchHistory(firebaseUser.uid)
+      getMatchHistory(user.uid)
         .then(setHistory)
         .finally(() => setHistoryLoading(false));
-    }, [firebaseUser]),
+    }, [user]),
   );
 
   const handlePhotoPress = async (slotIndex: number) => {
-    if (!firebaseUser || !user) return;
+    if (!user) return;
 
     const existing = user.photos[slotIndex];
 
@@ -70,7 +70,7 @@ export default function ProfileScreen() {
             setUploading(slotIndex);
             try {
               const url = await pickAndUploadPhoto(
-                firebaseUser.uid,
+                user.uid,
                 `photo_${slotIndex}`,
                 (pct) => console.log(`Upload ${pct}%`),
               );
@@ -244,7 +244,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             history.slice(0, 5).map(match => {
-              const isA = match.userIdA === firebaseUser?.uid;
+              const isA = match.userIdA === user?.uid;
               const partner = isA ? match.profileB : match.profileA;
               return (
                 <View key={match.matchId} style={styles.historyCard}>

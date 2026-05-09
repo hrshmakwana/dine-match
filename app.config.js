@@ -18,6 +18,7 @@ export default ({ config }) => ({
     supportsTablet: false,
     bundleIdentifier: 'com.yourname.dinematch',
     buildNumber: '1',
+    googleServicesFile: './GoogleService-Info.plist',
     infoPlist: {
       // Location — required for proximity detection
       NSLocationWhenInUseUsageDescription:
@@ -33,7 +34,7 @@ export default ({ config }) => ({
         'Choose a photo from your library for your DineMatch profile.',
     },
     config: {
-      googleMapsApiKey: process.env.GOOGLE_MAPS_IOS_KEY,
+      googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_KEY,
     },
   },
 
@@ -56,7 +57,7 @@ export default ({ config }) => ({
     ],
     config: {
       googleMaps: {
-        apiKey: process.env.GOOGLE_MAPS_ANDROID_KEY,
+        apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_KEY,
       },
     },
     googleServicesFile: './google-services.json',   // download from Firebase console
@@ -96,7 +97,7 @@ export default ({ config }) => ({
   // ─── Extra env vars exposed to app ──────────────────────────────────────────
   extra: {
     eas: {
-      projectId: process.env.EAS_PROJECT_ID,
+      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? process.env.EAS_PROJECT_ID,
     },
   },
 });

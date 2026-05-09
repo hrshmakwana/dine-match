@@ -151,78 +151,6 @@ export default function PostDateRatingScreen() {
   );
 }
 
-// ─── Match History Screen ─────────────────────────────────────────────────────
-// src/screens/MatchHistoryScreen.tsx — separate file in production
-
-import { useEffect } from 'react';
-import { FlatList } from 'react-native';
-import { getMatchHistory, MatchHistoryItem } from '../services/historyService';
-
-export function MatchHistoryScreen() {
-  const { user } = useAuthStore();
-  const [history, setHistory] = useState<MatchHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    getMatchHistory(user.uid).then(h => { setHistory(h); setLoading(false); });
-  }, [user?.uid]);
-
-  const formatDate = (ts: number) =>
-    new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-
-  return (
-    <SafeAreaView style={histStyles.container}>
-      <Text style={histStyles.title}>Dining history</Text>
-
-      {loading ? (
-        <ActivityIndicator color={COLORS.rust} style={{ marginTop: 40 }} />
-      ) : history.length === 0 ? (
-        <View style={histStyles.empty}>
-          <Text style={histStyles.emptyEmoji}>🍽️</Text>
-          <Text style={histStyles.emptyText}>No dining dates yet</Text>
-          <Text style={histStyles.emptySub}>Your past dining matches will appear here</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={history}
-          keyExtractor={item => item.match.matchId}
-          contentContainerStyle={{ padding: SPACING.md }}
-          renderItem={({ item }) => {
-            const isA = item.match.userIdA === user?.uid;
-            const partner = isA ? item.match.profileB : item.match.profileA;
-            const rated = !!item.myRating;
-
-            return (
-              <View style={histStyles.card}>
-                <View style={histStyles.cardRow}>
-                  <View style={histStyles.avatar}>
-                    <Text style={histStyles.avatarText}>{partner.name[0]}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={histStyles.partnerName}>{partner.name}, {partner.age}</Text>
-                    <Text style={histStyles.resto}>{item.match.restaurant.name}</Text>
-                    <Text style={histStyles.date}>{formatDate(item.match.createdAt)}</Text>
-                  </View>
-                  <View style={histStyles.ratingBadge}>
-                    {rated ? (
-                      <Text style={histStyles.ratingEmoji}>
-                        {item.myRating!.thumbsUp ? '👍' : '👎'}
-                      </Text>
-                    ) : (
-                      <Text style={histStyles.ratePrompt}>Rate?</Text>
-                    )}
-                  </View>
-                </View>
-              </View>
-            );
-          }}
-        />
-      )}
-    </SafeAreaView>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.cream },
   scroll: { padding: SPACING.md, paddingBottom: 40 },
@@ -269,33 +197,4 @@ const styles = StyleSheet.create({
   submitBtnText: { fontFamily: FONTS.sans, fontSize: 15, fontWeight: '500', color: COLORS.cream },
   skipBtn: { alignItems: 'center', paddingVertical: 10 },
   skipText: { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.muted },
-});
-
-const histStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.cream },
-  title: {
-    fontFamily: FONTS.serifDisplay, fontSize: 24, color: COLORS.deepBrown,
-    padding: SPACING.md, paddingBottom: 8,
-  },
-  empty: { alignItems: 'center', marginTop: 80 },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontFamily: FONTS.serifDisplay, fontSize: 22, color: COLORS.deepBrown },
-  emptySub: { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.muted, marginTop: 6 },
-  card: {
-    backgroundColor: '#f5e8d8', borderRadius: 14, padding: 14, marginBottom: 10,
-    borderWidth: 0.5, borderColor: COLORS.border,
-  },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: COLORS.cream, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: COLORS.border,
-  },
-  avatarText: { fontFamily: FONTS.serifDisplay, fontSize: 18, color: COLORS.rust },
-  partnerName: { fontFamily: FONTS.sans, fontSize: 14, fontWeight: '500', color: COLORS.deepBrown },
-  resto: { fontFamily: FONTS.sans, fontSize: 12, color: COLORS.rust, marginTop: 1 },
-  date: { fontFamily: FONTS.sans, fontSize: 11, color: COLORS.muted, marginTop: 1 },
-  ratingBadge: { alignItems: 'center' },
-  ratingEmoji: { fontSize: 24 },
-  ratePrompt: { fontFamily: FONTS.sans, fontSize: 11, color: COLORS.rust, fontWeight: '500' },
 });

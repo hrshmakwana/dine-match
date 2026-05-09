@@ -102,9 +102,8 @@ function MainNavigator() {
   );
 }
 
-// ── Root: gates on auth + profile completion ──────────────────────────────────
 export default function AppNavigator() {
-  const { firebaseUser, user, isLoading, isProfileComplete } = useAuthStore();
+  const { isLoading, user, isProfileComplete } = useAuthStore();
 
   if (isLoading) {
     return (
@@ -117,14 +116,15 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={NO_HEADER}>
-        {!firebaseUser ? (
-          // Not signed in → auth flow
+        {!user ? (
+          // Not logged in
           <RootStack.Screen name="Auth" component={AuthNavigator} />
         ) : !isProfileComplete ? (
-          // Signed in but profile incomplete → finish setup
-          <RootStack.Screen name="Setup" component={AuthNavigator} />
+          // Logged in but profile incomplete -> send to ProfileSetup via AuthNavigator
+          // (Alternatively could have a separate ProfileSetup navigator, but AuthNavigator works if we navigate to ProfileSetup)
+          <RootStack.Screen name="Auth" component={AuthNavigator} />
         ) : (
-          // Fully set up → main app
+          // Fully authenticated and profile complete
           <RootStack.Screen name="Main" component={MainNavigator} />
         )}
       </RootStack.Navigator>

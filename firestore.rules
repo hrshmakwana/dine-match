@@ -14,6 +14,19 @@ service cloud.firestore {
       return request.auth.uid == uid;
     }
 
+    function validGender(value) {
+      return value in ['man', 'woman', 'non-binary'];
+    }
+
+    function validFilters(filters) {
+      return filters.showGender in ['man', 'woman', 'non-binary', 'everyone']
+          && filters.ageMin is int
+          && filters.ageMax is int
+          && filters.maxDistanceKm is int
+          && filters.cuisines is list
+          && filters.mealTimes is list;
+    }
+
     function isMatchParticipant(matchData) {
       return request.auth.uid == matchData.userIdA
           || request.auth.uid == matchData.userIdB;
@@ -24,8 +37,23 @@ service cloud.firestore {
     // BUT: other signed-in users can read public fields (for match display).
     match /users/{userId} {
       allow read:   if isSignedIn();
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn()
+                    && isOwner(userId)
+                    && request.resource.data.uid == userId
+                    && request.resource.data.name is string
+                    && request.resource.data.age is int
+                    && validGender(request.resource.data.gender)
+                    && request.resource.data.photos is list
+                    && request.resource.data.foodLikes is list
+                    && request.resource.data.foodDislikes is list
+                    && request.resource.data.createdAt is int
+                    && request.resource.data.updatedAt is int;
+
+      allow update: if isSignedIn()
+                    && isOwner(userId)
+                    && request.resource.data.uid == userId
+                    && request.resource.data.updatedAt is int
+                    && (!('filters' in request.resource.data) || validFilters(request.resource.data.filters));
       allow delete: if false;   // soft-delete only via Cloud Function
     }
 

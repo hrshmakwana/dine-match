@@ -14,16 +14,16 @@ interface ActiveMatchState {
  * Used by the "My Date" tab to know whether to show the chat or an empty state.
  */
 export function useActiveMatch(): ActiveMatchState {
-  const { firebaseUser } = useAuthStore();
+  const { user } = useAuthStore();
   const [state, setState] = useState<ActiveMatchState>({ match: null, isLoading: true });
 
   useEffect(() => {
-    if (!firebaseUser) {
+    if (!user) {
       setState({ match: null, isLoading: false });
       return;
     }
 
-    const uid = firebaseUser.uid;
+    const uid = user.uid;
 
     // Listen to matches where this user is participant A or B, status = accepted
     const qA = query(
@@ -64,7 +64,7 @@ export function useActiveMatch(): ActiveMatchState {
       unsubA();
       unsubB();
     };
-  }, [firebaseUser?.uid]);
+  }, [user?.uid]);
 
   return state;
 }

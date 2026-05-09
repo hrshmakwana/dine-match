@@ -1,14 +1,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// MatchConfirmedScreen.tsx
+// ExtraScreens.tsx — Multiple screen components in one file
 // ─────────────────────────────────────────────────────────────────────────────
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity, FlatList, Image, ScrollView, Alert as RNAlert, TextInput as TI, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { doc, getDoc } from 'firebase/firestore';
+import { Ionicons } from '@expo/vector-icons';
+import { doc, getDoc, setDoc as fsSetDoc, updateDoc as fsUpdateDoc, arrayUnion } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../services/firebase';
 import { DiningMatch, SearchStackParamList } from '../types';
 import { COLORS, FONTS, SPACING } from '../utils/theme';
+import { getMatchHistory, MatchHistoryItem } from '../services/historyService';
+import { useAuthStore } from '../hooks/useAuthStore';
 
 type RouteProps = RouteProp<SearchStackParamList, 'MatchConfirmed'>;
 
@@ -97,15 +100,12 @@ const mc = StyleSheet.create({
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MatchHistoryScreen.tsx
+// MatchHistoryScreen
 // ─────────────────────────────────────────────────────────────────────────────
-import { FlatList, Image } from 'react-native';
-import { getMatchHistory, MatchHistoryItem } from '../services/historyService';
-import { useAuthStore } from '../hooks/useAuthStore';
 
 export function MatchHistoryScreen() {
   const { user } = useAuthStore();
-  const [history, setHistory] = React.useState<MatchHistoryItem[]>([]);
+  const [history, setHistory] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   useEffect(() => {
@@ -118,7 +118,7 @@ export function MatchHistoryScreen() {
       <Text style={mh.title}>Past Dining Dates</Text>
       <FlatList
         data={history}
-        keyExtractor={item => item.matchId}
+        keyExtractor={item => item.match?.matchId ?? Math.random().toString()}
         contentContainerStyle={{ padding: SPACING.md, paddingBottom: 40 }}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', paddingTop: 60 }}>
@@ -127,29 +127,33 @@ export function MatchHistoryScreen() {
             <Text style={mh.emptySubText}>Start searching to find your first dining companion!</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <View style={mh.card}>
-            <View style={mh.cardLeft}>
-              {item.partnerPhoto
-                ? <Image source={{ uri: item.partnerPhoto }} style={mh.avatar} />
-                : <View style={mh.avatarPlaceholder}><Text style={mh.avatarInitial}>{item.partnerName[0]}</Text></View>
-              }
+        renderItem={({ item }) => {
+          const isA = item.match?.userIdA === user?.uid;
+          const partner = isA ? item.match?.profileB : item.match?.profileA;
+          return (
+            <View style={mh.card}>
+              <View style={mh.cardLeft}>
+                {partner?.photos?.[0]
+                  ? <Image source={{ uri: partner.photos[0] }} style={mh.avatar} />
+                  : <View style={mh.avatarPlaceholder}><Text style={mh.avatarInitial}>{partner?.name?.[0] ?? '?'}</Text></View>
+                }
+              </View>
+              <View style={mh.cardInfo}>
+                <Text style={mh.cardName}>{partner?.name ?? 'Unknown'}</Text>
+                <Text style={mh.cardResto}>{item.match?.restaurant?.name ?? ''}</Text>
+                <Text style={mh.cardDate}>{new Date(item.match?.createdAt ?? 0).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+              </View>
+              <View style={mh.ratingBadge}>
+                {item.myRating?.thumbsUp === true
+                  ? <Text style={mh.ratingUp}>👍</Text>
+                  : item.myRating?.thumbsUp === false
+                  ? <Text style={mh.ratingDown}>👎</Text>
+                  : <Text style={mh.ratingPending}>Rate?</Text>
+                }
+              </View>
             </View>
-            <View style={mh.cardInfo}>
-              <Text style={mh.cardName}>{item.partnerName}</Text>
-              <Text style={mh.cardResto}>{item.restaurantName}</Text>
-              <Text style={mh.cardDate}>{new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
-            </View>
-            <View style={mh.ratingBadge}>
-              {item.myRating === 'up'
-                ? <Text style={mh.ratingUp}>👍</Text>
-                : item.myRating === 'down'
-                ? <Text style={mh.ratingDown}>👎</Text>
-                : <Text style={mh.ratingPending}>Rate?</Text>
-              }
-            </View>
-          </View>
-        )}
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -177,10 +181,8 @@ const mh = StyleSheet.create({
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ReportBlockScreen.tsx
+// ReportBlockScreen
 // ─────────────────────────────────────────────────────────────────────────────
-import { Alert as RNAlert, TextInput as TI } from 'react-native';
-import { doc as fsDoc, setDoc as fsSetDoc, updateDoc as fsUpdateDoc, arrayUnion } from 'firebase/firestore';
 
 const REPORT_REASONS = [
   'Inappropriate photos',
@@ -207,7 +209,7 @@ export function ReportBlockScreen() {
     setSubmitting(true);
     try {
       // Write report to Firestore
-      await fsSetDoc(fsDoc(db, 'reports', `${user.uid}_${partnerUid}_${Date.now()}`), {
+      await fsSetDoc(doc(db, 'reports', `${user.uid}_${partnerUid}_${Date.now()}`), {
         reportedBy: user.uid,
         reportedUser: partnerUid,
         matchId,
@@ -220,7 +222,7 @@ export function ReportBlockScreen() {
 
       // If blocking: add to user's blocked list
       if (action === 'block') {
-        await fsUpdateDoc(fsDoc(db, COLLECTIONS.USERS, user.uid), {
+        await fsUpdateDoc(doc(db, COLLECTIONS.USERS, user.uid), {
           blockedUsers: arrayUnion(partnerUid),
         });
       }
@@ -243,7 +245,7 @@ export function ReportBlockScreen() {
     <SafeAreaView style={rb.container}>
       <View style={rb.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={24} color={COLORS.brown} />
+          <Ionicons name="close" size={24} color={COLORS.brown} as any />
         </TouchableOpacity>
         <Text style={rb.headerTitle}>Report or block</Text>
         <View style={{ width: 24 }} />
@@ -329,9 +331,10 @@ const rb = StyleSheet.create({
 // PremiumReserveScreen.tsx — Reserve a table at the matched restaurant
 // Uses restaurant's booking URL or a direct API like OpenTable / Dineout
 // ─────────────────────────────────────────────────────────────────────────────
-import { Linking } from 'react-native';
+// Linking already imported at top
 
 export function PremiumReserveScreen() {
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { matchId, match } = route.params as { matchId: string; match: DiningMatch };
   const [isPremium, setIsPremium] = React.useState(false); // check from user doc
@@ -356,7 +359,7 @@ export function PremiumReserveScreen() {
   return (
     <SafeAreaView style={pr.container}>
       <View style={pr.header}>
-        <TouchableOpacity onPress={() => useNavigation<any>().goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color={COLORS.brown} />
         </TouchableOpacity>
         <Text style={pr.headerTitle}>Reserve a table</Text>

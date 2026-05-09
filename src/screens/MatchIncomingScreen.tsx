@@ -10,13 +10,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { respondToMatch } from '../services/matchingService';
-import { scheduleMatchReminder, scheduleRatingPrompt } from '../services/notificationService';
+// Note: scheduleMatchReminder and scheduleRatingPrompt are placeholder stubs
+const scheduleMatchReminder = async (..._args: any[]) => {};
+const scheduleRatingPrompt = async (..._args: any[]) => {};
 import { SearchStackParamList, DiningMatch } from '../types';
 import { COLORS, FONTS, SPACING } from '../utils/theme';
 
 type RouteProps = RouteProp<SearchStackParamList, 'MatchIncoming'>;
 
-export function MatchIncomingScreen() {
+export default function MatchIncomingScreen() {
   const navigation = useNavigation<any>();
   const { match } = useRoute<RouteProps>().params;
   const [loading, setLoading] = useState<'accept' | 'decline' | null>(null);

@@ -6,11 +6,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types';
+import { AuthStackParamList } from '../types';
 import { COLORS, FONTS } from '../utils/theme';
 
 const { height } = Dimensions.get('window');
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Splash'>;
+type Nav = any;
 
 export default function SplashScreen() {
   const navigation = useNavigation<Nav>();
@@ -79,7 +79,7 @@ export default function SplashScreen() {
         >
           <TouchableOpacity
             style={styles.primaryBtn}
-            onPress={() => navigation.navigate('Auth')}
+            onPress={() => navigation.navigate('PhoneAuth')}
             activeOpacity={0.87}
           >
             <Text style={styles.primaryBtnText}>Get started</Text>
@@ -87,7 +87,7 @@ export default function SplashScreen() {
 
           <TouchableOpacity
             style={styles.secondaryBtn}
-            onPress={() => navigation.navigate('Auth')}
+            onPress={() => navigation.navigate('PhoneAuth')}
             activeOpacity={0.7}
           >
             <Text style={styles.secondaryBtnText}>Already have an account? Sign in</Text>

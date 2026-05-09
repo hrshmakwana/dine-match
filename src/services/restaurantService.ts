@@ -4,7 +4,7 @@
 import { LatLng, Restaurant } from '../types';
 
 const PLACES_API_BASE = 'https://maps.googleapis.com/maps/api/place';
-const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY!;
+const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY!;
 
 // Map Google price level (0-4) to our type
 function mapPriceLevel(level?: number): 1 | 2 | 3 | 4 {

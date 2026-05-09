@@ -9,9 +9,6 @@ import { UserProfile, SearchFilters, DEFAULT_FILTERS } from '../types';
 
 // ─── Store shape ──────────────────────────────────────────────────────────────
 interface AuthState {
-  // Firebase auth user
-  firebaseUser: FirebaseUser | null;
-
   // DineMatch profile (from Firestore)
   user: UserProfile | null;
 
@@ -34,7 +31,6 @@ export const useAuthStore = create<AuthState>((set, get) => {
   let profileUnsub: (() => void) | null = null;
 
   return {
-    firebaseUser: null,
     user: null,
     filters: DEFAULT_FILTERS,
     isLoading: true,
@@ -43,19 +39,19 @@ export const useAuthStore = create<AuthState>((set, get) => {
     setFilters: (filters) => {
       set({ filters });
       // Persist to Firestore if logged in
-      const { firebaseUser } = get();
-      if (firebaseUser) {
-        updateDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), { filters })
+      const { user } = get();
+      if (user?.uid) {
+        updateDoc(doc(db, COLLECTIONS.USERS, user.uid), { filters })
           .catch(console.error);
       }
     },
 
     updateProfile: async (partial) => {
-      const { firebaseUser } = get();
-      if (!firebaseUser) return;
+      const { user } = get();
+      if (!user?.uid) return;
 
-      const updated = { ...get().user, ...partial, updatedAt: Date.now() } as UserProfile;
-      await setDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), updated, { merge: true });
+      const updated = { ...user, ...partial, updatedAt: Date.now() } as UserProfile;
+      await setDoc(doc(db, COLLECTIONS.USERS, user.uid), updated, { merge: true });
       set({ user: updated, isProfileComplete: isComplete(updated) });
     },
 
@@ -63,7 +59,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       profileUnsub?.();
       profileUnsub = null;
       await firebaseSignOut(auth);
-      set({ firebaseUser: null, user: null, isLoading: false, isProfileComplete: false });
+      set({ user: null, isLoading: false, isProfileComplete: false });
     },
 
     // Called once from App.tsx — sets up Firebase auth listener
@@ -72,11 +68,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
         if (!fbUser) {
           profileUnsub?.();
           profileUnsub = null;
-          set({ firebaseUser: null, user: null, isLoading: false, isProfileComplete: false });
+          set({ user: null, isLoading: false, isProfileComplete: false });
           return;
         }
-
-        set({ firebaseUser: fbUser });
 
         // Subscribe to Firestore profile doc
         profileUnsub = onSnapshot(
@@ -91,8 +85,13 @@ export const useAuthStore = create<AuthState>((set, get) => {
                 isLoading: false,
               });
             } else {
-              // New user — profile not created yet
-              set({ user: null, isProfileComplete: false, isLoading: false });
+              // New user — profile not created yet, but auth is successful.
+              // Create a basic stub profile in memory with uid so ProfileSetup can work.
+              set({ 
+                user: { uid: fbUser.uid } as UserProfile, 
+                isProfileComplete: false, 
+                isLoading: false 
+              });
             }
           },
           (err) => {

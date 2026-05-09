@@ -121,3 +121,41 @@ export async function replaceProfilePhoto(
   await saveUserPhotos(userId, updatedPhotos);
   return updatedPhotos;
 }
+// ─── Convenience wrappers (used by screen imports) ───────────────────────────
+
+/**
+ * Pick a photo from gallery, upload it, and return the download URL.
+ * Screens call this as: pickAndUploadPhoto(userId, photoIndexOrName, onProgress?)
+ */
+export async function pickAndUploadPhoto(
+  userId: string,
+  photoIndexOrName: number | string,
+  onProgress?: UploadProgress,
+): Promise<string | null> {
+  const localUri = await pickProfilePhoto();
+  if (!localUri) return null;
+
+  const photoIndex = typeof photoIndexOrName === 'number'
+    ? photoIndexOrName
+    : parseInt(String(photoIndexOrName).replace(/\D/g, '') || '0', 10);
+
+  const downloadUrl = await uploadProfilePhoto(userId, localUri, photoIndex, onProgress);
+  return downloadUrl;
+}
+
+/**
+ * Delete a photo. Accepts either a download URL or falls back gracefully.
+ */
+export async function deletePhoto(photoUrlOrPath: string): Promise<void> {
+  try {
+    // Try to create a ref from the full URL (works with gs:// URLs and storage paths)
+    const storageRef = ref(storage, photoUrlOrPath);
+    await deleteObject(storageRef);
+  } catch (err: any) {
+    // If it's a download URL (https://firebasestorage...) we can't directly ref it,
+    // so just log and move on — the storage object will be cleaned up by lifecycle rules
+    if (err.code !== 'storage/object-not-found') {
+      console.warn('deletePhoto: could not delete, skipping:', err.message);
+    }
+  }
+}

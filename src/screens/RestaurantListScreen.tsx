@@ -16,7 +16,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { searchNearbyRestaurants, autocompleteRestaurants } from '../services/restaurantService';
 import { Restaurant, LatLng, SearchStackParamList } from '../types';
 import { useAuthStore } from '../hooks/useAuthStore';
-import { useFilterStore } from '../hooks/useFilterStore';
 import { COLORS, FONTS, SPACING } from '../utils/theme';
 
 type NavProp = NativeStackNavigationProp<SearchStackParamList, 'RestaurantList'>;
@@ -38,8 +37,7 @@ const CUISINE_FILTERS = ['All', '🍕 Italian', '🍱 Japanese', '🌮 Mexican',
 
 export default function RestaurantListScreen() {
   const navigation = useNavigation<NavProp>();
-  const { user } = useAuthStore();
-  const { filters } = useFilterStore();
+  const { filters } = useAuthStore();
 
   const mapRef = useRef<MapView>(null);
   const [userLocation, setUserLocation] = useState<LatLng | null>(null);

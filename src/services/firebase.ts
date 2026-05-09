@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import { getStorage } from 'firebase/storage';
 
@@ -21,11 +21,6 @@ export const auth    = getAuth(app);
 export const db      = getFirestore(app);     // Firestore — profiles, matches, messages
 export const rtdb    = getDatabase(app);       // Realtime DB — live proximity updates
 export const storage = getStorage(app);        // Storage — profile photos
-
-// Enable offline persistence for Firestore (works on mobile)
-enableIndexedDbPersistence(db).catch(() => {
-  // Persistence fails in some environments (e.g. multiple tabs) — safe to ignore
-});
 
 // ─── Firestore Collection Paths ───────────────────────────────────────────────
 export const COLLECTIONS = {

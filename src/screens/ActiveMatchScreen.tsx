@@ -51,7 +51,7 @@ export default function ActiveMatchScreen() {
 
           <TouchableOpacity
             style={styles.findBtn}
-            onPress={() => navigation.navigate('Restaurants')}
+            onPress={() => navigation.navigate('Dine', { screen: 'RestaurantList' })}
             activeOpacity={0.85}
           >
             <Text style={styles.findBtnText}>Find a restaurant →</Text>
